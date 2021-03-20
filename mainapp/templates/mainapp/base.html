@@ -53,6 +53,9 @@
                         <a class="nav-link" href="{% url 'auth:login' %}">Войти <i class="fas fa-sign-in-alt"></i></a>
                     </li>
                 {% endif %}
+                <li class="nav-item">
+                    <span class="badge badge-secondary badge-pill">{{ basketcount }}</span>
+                </li>
             </ul>
         </div>
     </div>

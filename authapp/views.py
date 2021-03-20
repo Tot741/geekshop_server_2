@@ -2,9 +2,13 @@ from django.shortcuts import render, HttpResponseRedirect
 from django.contrib import auth, messages
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
+from django.conf import settings
 
 from authapp.forms import UserLoginForm, UserRegisterForm, UserProfileForm
+from authapp.models import User
 from basket.models import Basket
+
 
 
 def login(request):
@@ -30,9 +34,13 @@ def register(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Вы успешно зарегистрировались!')
-            return HttpResponseRedirect(reverse('auth:login'))
+            user = form.save()
+            if send_verify_mail(user):
+                messages.success(request, 'Вы успешно зарегистрировались! На вашу почту отправлено письмо для потверждения')
+                return HttpResponseRedirect(reverse('auth:login'))
+            else:
+                messages.error('Ошибка отправки сообщения')
+                return HttpResponseRedirect(reverse('auth:login'))
     else:
         form = UserRegisterForm()
     context = {
@@ -62,3 +70,22 @@ def profile(request):
         'baskets': Basket.objects.filter(user=request.user),
     }
     return render(request, 'authapp/profile.html', context)
+
+def verify(request, id, hash):
+    user = User.objects.get(id=id)
+    if user.activation_key == hash and not user.is_activation_key_expired():
+        user.is_active = True
+        user.activation_key = None
+        user.save()
+        auth.login(request, user)
+        return render(request, 'authapp/verification.html')
+    else:
+        print(f'error activation user: {user}')
+        return render(request, 'authapp/verification.html')
+
+def send_verify_mail(user):
+    verify_link = reverse('auth:verify', args=[user.pk, user.activation_key])
+    title = f'Подтверждение регистрации учетной записи {user.username}'
+    message = f'Для подтверждения регистрации учетной записи {user.username} перейдите по ссылке: \n{settings.DOMAIN_NAME}{verify_link}'
+    return send_mail(title, message, settings.EMAIL_HOST_USER, [user.username], fail_silently=False)
+
