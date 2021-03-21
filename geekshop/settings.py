@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
-import os
+import os, json
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'mainapp',
     'authapp',
     'basket',
-    'adminapp'
+    'adminapp',
+    'social_django'
 
 ]
 
@@ -145,3 +146,21 @@ EMAIL_HOST_PASSWORD = 'geekshop'
 EMAIL_USE_SSL = False
 
 EMAIL_HOST_USER, EMAIL_HOST_PASSWORD = None, None
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'social_core.backends.vk.VKOAuth2',
+    'social_core.backends.google.GoogleOAuth2'
+)
+
+with open('geekshop/vk.json', 'r') as f:
+    VK = json.load(f)
+
+SOCIAL_AUTH_VK_OAUTH2_KEY = VK['SOCIAL_AUTH_VK_OAUTH2_KEY']
+SOCIAL_AUTH_VK_OAUTH2_SECRET = VK['SOCIAL_AUTH_VK_OAUTH2_SECRET']
+
+with open('geekshop/google.json', 'r') as f:
+    GOOGLE = json.load(f)
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = GOOGLE['SOCIAL_AUTH_GOOGLE_OAUTH2_KEY']
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = GOOGLE['SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET']
