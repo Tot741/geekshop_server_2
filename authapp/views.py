@@ -96,8 +96,8 @@ def edit(request):
     if request.method == 'POST':
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
         ext_profile_form = UserProfileEditForm(request.POST, instance=request.user.userprofile)
-        if edit_form.is_valid() and profile_form.is_valid():
-            edit_form.save()
+        if profile_form.is_valid() and ext_profile_form.is_valid():
+            profile_form.save()
             return HttpResponseRedirect(reverse('auth:edit'))
     else:
         profile_form = UserProfileForm(instance=request.user)
