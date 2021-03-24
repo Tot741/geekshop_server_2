@@ -1,0 +1,17 @@
+<div class="card-footer">
+    {% if object.status == 'FM' %}
+        <a href="{% url 'orders:order_forming_complete' object.pk %}">
+            <button class="btn btn-warning">совершить покупку</button>
+        </a>
+
+        <a href="{% url 'orders:order_delete' object.pk %}">
+            <button class="btn btn-danger">удалить</button>
+        </a>
+
+    {% endif %}
+
+    <a href="{% url 'orders:orders_list' %}">
+        <button class="btn btn-info">к списку заказов</button>
+    </a>
+
+</div>
