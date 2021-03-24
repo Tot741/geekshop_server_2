@@ -58,8 +58,11 @@
                     <div class="col-lg-6" style="margin-top: 33px;">
                         <input class="btn btn-info btn-block" type="submit" value="Сохранить">
                     </div>
+
                 </div>
             </form>
+
+            <a class="nav-link text-center" href="{% url 'auth:edit' %}" style="margin: 15px 0px;">Расширенный профиль</a>
         </div>
         <div class="col-lg-5">
             {% include 'basket/basket.html' %}

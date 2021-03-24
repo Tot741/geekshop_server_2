@@ -4,8 +4,9 @@ from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import transaction
 
-from authapp.forms import UserLoginForm, UserRegisterForm, UserProfileForm
+from authapp.forms import UserLoginForm, UserRegisterForm, UserProfileForm, UserProfileEditForm
 from authapp.models import User
 from basket.models import Basket
 
@@ -77,7 +78,7 @@ def verify(request, id, hash):
         user.is_active = True
         user.activation_key = None
         user.save()
-        auth.login(request, user)
+        auth.login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         return render(request, 'authapp/verification.html')
     else:
         print(f'error activation user: {user}')
@@ -89,3 +90,21 @@ def send_verify_mail(user):
     message = f'Для подтверждения регистрации учетной записи {user.username} перейдите по ссылке: \n{settings.DOMAIN_NAME}{verify_link}'
     return send_mail(title, message, settings.EMAIL_HOST_USER, [user.username], fail_silently=False)
 
+
+@transaction.atomic
+def edit(request):
+    if request.method == 'POST':
+        profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
+        ext_profile_form = UserProfileEditForm(request.POST, instance=request.user.userprofile)
+        if profile_form.is_valid() and ext_profile_form.is_valid():
+            profile_form.save()
+            return HttpResponseRedirect(reverse('auth:edit'))
+    else:
+        profile_form = UserProfileForm(instance=request.user)
+        ext_profile_form = UserProfileEditForm(instance=request.user.userprofile)
+    context = {
+        'title': 'Редактрирование дополнительных данных',
+        'profile_form': profile_form,
+        'ext_profile_form': ext_profile_form
+    }
+    return render(request, 'authapp/edit.html', context)

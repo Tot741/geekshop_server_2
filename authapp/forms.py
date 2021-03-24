@@ -2,7 +2,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, User
 from django import forms
 import random, hashlib
 
-from authapp.models import User
+from authapp.models import User, UserProfile
 
 
 class UserLoginForm(AuthenticationForm):
@@ -44,7 +44,6 @@ class UserRegisterForm(UserCreationForm):
         return user
 
 
-
 class UserProfileForm(UserChangeForm):
     avatar = forms.ImageField(widget=forms.FileInput(), required=False)
 
@@ -65,3 +64,18 @@ class UserProfileForm(UserChangeForm):
         self.fields['username'].widget.attrs['readonly'] = True
         self.fields['email'].widget.attrs['readonly'] = True
         self.fields['avatar'].widget.attrs['class'] = 'custom-file-input'
+
+
+class UserProfileEditForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ('tagline', 'aboutMe', 'gender')
+
+    def __init__(self, *args, **kwargs):
+        super(UserProfileEditForm, self).__init__(*args, **kwargs)
+        self.fields['tagline'].widget.attrs['placeholder'] = 'Введите теги'
+        self.fields['aboutMe'].widget.attrs['placeholder'] = 'Любая информация о себе'
+        self.fields['gender'].widget.attrs['placeholder'] = 'Выберите пол'
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control py-4'
+        self.fields['gender'].widget.attrs['class'] = 'form-control'
