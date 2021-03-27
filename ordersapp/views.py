@@ -9,6 +9,7 @@ from django.views.generic.detail import DetailView
 
 from ordersapp.models import Order, OrderItem
 from ordersapp.forms import OrderItemForm
+from basket.models import Basket
 
 
 class OrderList(ListView):
@@ -30,7 +31,16 @@ class OrderItemsCreate(CreateView):
         if self.request.POST:
             formset = OrderFormSet(self.request.POST)
         else:
-            formset = OrderFormSet()
+            basket_items = Basket.get_items(self.request.user)
+            if len(basket_items):
+                OrderFormSet = inlineformset_factory(Order, OrderItem, form=OrderItemForm, extra=len(basket_items))
+                formset = OrderFormSet()
+                for num, form in enumerate(formset.forms):
+                    form.initial['product'] = basket_items[num].product
+                    form.initial['quantity'] = basket_items[num].quantity
+                basket_items.delete()
+            else:
+                formset = OrderFormSet()
 
         data['orderitems'] = formset
         return data
