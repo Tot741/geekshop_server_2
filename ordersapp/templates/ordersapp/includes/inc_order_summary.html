@@ -1,0 +1,29 @@
+{% if object %}
+    <div class="container" style="margin-top: 70px;">
+        <h2 class="mt-2 mb-2">Заказ №{{ object.pk }} от {{ object.created|date:"Y-m-d H:i:s" }}</h2>
+        <hr>
+        <h4 class="mt-4 mb-4">Заказчик: {{ user.last_name }} {{ user.first_name }} </h4>
+        <h4 class="mt-4 mb-4">Обновлен: {{ object.updated|date:"Y-m-d H:i:s" }}</h4>
+        <h4 class="mt-4 mb-4">Статус: {{ object.get_status_display }}</h4>
+        <hr>
+        <h4 class="mt-4 mb-4">
+            Общее количество товаров: <span class="order_total_quantity">{{ object.get_total_quantity }}</span>
+        </h4>
+        <h3 class="mt-3 mb-3">
+            Oбщая стоимость: <span class="order_total_cost">{{ object.get_total_cost }}</span> руб
+        </h3>
+        {% else %}
+        <h2 class="mt-2 mb-2">Новый заказ</h2>
+        <hr>
+        <h4 class="mt-2 mb-2">Заказчик: {{ user.last_name }} {{ user.first_name }} </h4>
+        {% if basket.0 %}
+            <h4 class="mt-4 mb-4">
+                Общее количество товаров: <span class="order_total_quantity"></span>
+            </h4>
+            <h3 class="mt-3 mb-3">
+                Oбщая стоимость: <span class="order_total_cost"></span> руб
+            </h3>
+        {% endif %}
+    </div>
+{% endif %}
+<hr>
