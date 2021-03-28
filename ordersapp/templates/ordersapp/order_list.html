@@ -1,0 +1,81 @@
+{% extends 'ordersapp/base.html' %}
+{% load staticfiles %}
+
+
+{% block content %}
+<div class="container" style="margin-top: 70px;">
+    <h3 class="mt-3 mb-3 text-center">Ваши заказы,
+        {% if user.first_name %}
+            {{ user.first_name|title }}
+        {% else %}
+            Пользователь
+        {% endif %}</h3>
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Создан</th>
+                        <th>Обновлен</th>
+                        <th>Статус</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tfoot>
+                    <tr>
+                        <th>ID</th>
+                        <th>Создан</th>
+                        <th>Обновлен</th>
+                        <th>Статус</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    </tfoot>
+                    <tbody>
+                    {% for item in object_list %}
+                        {% if item.is_active %}
+                            <tr>
+                                <td>{{ item.pk }}</td>
+                                <td>{{ item.created|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ item.updated|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>
+                                    <a href="{% url 'orders:order_read' item.pk %}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if item.status == 'FM' %}
+                                        <a href="{% url 'orders:order_update' item.pk %}">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.status == 'FM' %}
+                                        <a href="{% url 'orders:order_delete' item.pk %}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <a href="{% url 'orders:order_create' %}">
+            <button class="btn btn-success">Создать заказ</button>
+        </a>
+    </div>
+</div>
+{% endblock %}
