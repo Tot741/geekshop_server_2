@@ -22,6 +22,10 @@ class OrderList(ListView):
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
 
+    @method_decorator(login_required())
+    def dispatch(self, *args, **kwargs):
+        return super(ListView, self).dispatch(*args, **kwargs)
+
 
 class OrderItemsCreate(CreateView):
     model = Order
@@ -70,7 +74,7 @@ class OrderItemsCreate(CreateView):
 
 
 class OrderItemsUpdate(UpdateView):
-    #TODO При изменении количества товара в заказе не меняется количество на остатках. При добавлении новой позиции в
+    # TODO При изменении количества товара в заказе не меняется количество на остатках. При добавлении новой позиции в
     # заказ, так же не меняются остатки
     model = Order
     fields = []
