@@ -1,14 +1,19 @@
 from django.shortcuts import get_object_or_404, HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.db import transaction
+from django.http import HttpResponse, JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
 from django.forms import inlineformset_factory
 
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.views.generic.detail import DetailView
 
+from mainapp.models import Product
 from ordersapp.models import Order, OrderItem
 from ordersapp.forms import OrderItemForm
+from basket.models import Basket
 
 
 class OrderList(ListView):
@@ -16,6 +21,10 @@ class OrderList(ListView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
+
+    @method_decorator(login_required())
+    def dispatch(self, *args, **kwargs):
+        return super(ListView, self).dispatch(*args, **kwargs)
 
 
 class OrderItemsCreate(CreateView):
@@ -29,10 +38,59 @@ class OrderItemsCreate(CreateView):
 
         if self.request.POST:
             formset = OrderFormSet(self.request.POST)
+            # TODO Здесь при создании заказ не из корзины ,а по кнопке "Создать заказ" не происходит списание продукта
+            #  из базы, нужно добавить/исправить логику
         else:
-            formset = OrderFormSet()
+            basket_items = Basket.get_items(self.request.user)
+            if len(basket_items):
+                OrderFormSet = inlineformset_factory(Order, OrderItem, form=OrderItemForm, extra=len(basket_items))
+                formset = OrderFormSet()
+                for num, form in enumerate(formset.forms):
+                    form.initial['product'] = basket_items[num].product
+                    form.initial['quantity'] = basket_items[num].quantity
+                    form.initial['price'] = basket_items[num].product.price
+            else:
+                formset = OrderFormSet()
 
         data['orderitems'] = formset
+        return data
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        orderitems = context['orderitems']
+
+        with transaction.atomic():
+            Basket.objects.filter(user=self.request.user).delete()
+            form.instance.user = self.request.user
+            self.object = form.save()
+            if orderitems.is_valid():
+                orderitems.instance = self.object
+                orderitems.save()
+
+        if self.object.get_total_cost() == 0:
+            self.object.delete()
+
+        return super().form_valid(form)
+
+
+class OrderItemsUpdate(UpdateView):
+    # TODO При изменении количества товара в заказе не меняется количество на остатках. При добавлении новой позиции в
+    # заказ, так же не меняются остатки
+    model = Order
+    fields = []
+    success_url = reverse_lazy('orders:orders_list')
+
+    def get_context_data(self, **kwargs):
+        data = super(OrderItemsUpdate, self).get_context_data(**kwargs)
+        OrderFormSet = inlineformset_factory(Order, OrderItem, form=OrderItemForm, extra=1)
+        if self.request.POST:
+            data['orderitems'] = OrderFormSet(self.request.POST, instance=self.object)
+        else:
+            formset = OrderFormSet(instance=self.object)
+            for form in formset.forms:
+                if form.instance.pk:
+                    form.initial['price'] = form.instance.product.price
+            data['orderitems'] = formset
         return data
 
     def form_valid(self, form):
@@ -49,36 +107,7 @@ class OrderItemsCreate(CreateView):
         if self.object.get_total_cost() == 0:
             self.object.delete()
 
-        return super(OrderItemsCreate, self).form_valid(form)
-
-
-class OrderItemsUpdate(UpdateView):
-    model = Order
-    fields = []
-    success_url = reverse_lazy('orders:orders_list')
-
-    def get_context_data(self, **kwargs):
-        data = super(OrderItemsUpdate, self).get_context_data(**kwargs)
-        OrderFormSet = inlineformset_factory(Order, OrderItem, form=OrderItemForm, extra=1)
-
-        if self.request.POST:
-            data['orderitems'] = OrderFormSet(self.request.POST, instance=self.object)
-        else:
-            data['orderitems'] = OrderFormSet(instance=self.object)
-
-        return data
-
-    def form_valid(self, form):
-        context = self.get_context_data()
-        orderitems = context['orderitems']
-
-        with transaction.atomic():
-            self.object = form.save()
-            if orderitems.is_valid():
-                orderitems.instance = self.object
-                orderitems.save()
-
-        return super(OrderItemsUpdate, self).form_valid(form)
+        return super().form_valid(form)
 
 
 class OrderDelete(DeleteView):
@@ -100,3 +129,12 @@ def order_forming_complete(request, pk):
     order.status = Order.SENT_TO_PROCEED
     order.save()
     return HttpResponseRedirect(reverse('orders:orders_list'))
+
+
+def get_product_price(request, pk):
+    if request.is_ajax():
+        product = Product.objects.filter(pk=int(pk)).first()
+        if product:
+            return JsonResponse({'price': product.price})
+        else:
+            return JsonResponse({'price': 0})

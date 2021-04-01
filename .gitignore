@@ -4,3 +4,4 @@ db.sqlite3
 /media/
 /geekshop/vk.json
 /geekshop/google.json
+/static/debug_toolbar/
