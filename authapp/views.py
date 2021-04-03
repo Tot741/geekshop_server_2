@@ -91,7 +91,7 @@ def send_verify_mail(user):
     return send_mail(title, message, settings.EMAIL_HOST_USER, [user.username], fail_silently=False)
 
 
-@transaction.atomic
+@login_required
 def edit(request):
     if request.method == 'POST':
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
