@@ -1,4 +1,7 @@
 from django.db import models
+from django.conf import settings
+from django.core.cache import cache
+
 
 # Create your models here.
 class ProductCategory(models.Model):
@@ -7,6 +10,24 @@ class ProductCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def get_all(cls):
+        if settings.LOW_CACHE:
+            key = 'categories'
+            categories = cache.get(key)
+            if categories is None:
+                categories = cls.objects.all()
+                cache.set(key, categories)
+            return categories
+        else:
+            return cls.objects.all()
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        super().save()
+        cache.delete('categories')
+
 
 class Product(models.Model):
     name = models.CharField(max_length=256)
@@ -19,3 +40,26 @@ class Product(models.Model):
 
     def __str__(self):
         return f'{self.name} | {self.category.name}'
+
+    @classmethod
+    def get_all(cls):
+        if settings.LOW_CACHE:
+            key = 'products'
+            products = cache.get(key)
+            if products is None:
+                products = cls.objects.all()
+                cache.set(key, products)
+            return products
+        else:
+            return cls.objects.all()
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        super().save()
+        cache.delete('products')
+
+
+def db_profile_by_type(prefix, type, queries):
+    update_queries = list(filter(lambda x: type in x['sql'], queries))
+    print(f'db_profile {type} for {prefix}:')
+    [print(query['sql']) for query in update_queries]

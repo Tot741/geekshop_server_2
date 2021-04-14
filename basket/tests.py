@@ -1,3 +1,19 @@
 from django.test import TestCase
+from django.test.client import Client
+from mainapp.models import Product
+from django.core.management import call_command
 
-# Create your tests here.
+
+class TestMainappSmoke(TestCase):
+    def setUp(self):
+        call_command('flush', '--noinput')
+        call_command('loaddata', 'test_db.json')
+        self.client = Client()
+
+    def test_basket_add(self):
+        for product in Product.objects.all():
+            response = self.client.get(f'/baskets/basket-add/{product.pk}/')
+            self.assertEqual(response.status_code, 200)
+
+    def tearDown(self):
+        call_command('sqlsequencereset', 'mainapp', 'authapp', 'ordersapp', 'basket')

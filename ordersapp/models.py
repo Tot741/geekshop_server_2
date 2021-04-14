@@ -1,8 +1,17 @@
 from django.db import models
-
-# Create your models here.
 from django.conf import settings
+from django.db.models import F
+
 from mainapp.models import Product
+
+
+class OrderItemQuerySet(models.QuerySet):
+
+    def delete(self, *args, **kwargs):
+        for object in self:
+            object.product.quantity = F('quantity') + object.quantity
+            object.product.save()
+        super(OrderItemQuerySet, self).delete(*args, **kwargs)
 
 
 class Order(models.Model):
@@ -31,6 +40,8 @@ class Order(models.Model):
                               default=FORMING)
     is_active = models.BooleanField(verbose_name='активен', default=True)
 
+    objects = OrderItemQuerySet.as_manager()
+
     class Meta:
         ordering = ('-created',)
         verbose_name = 'заказ'
@@ -53,11 +64,19 @@ class Order(models.Model):
 
     def delete(self):
         for item in self.orderitems.select_related():
-            item.product.quantity += item.quantity
+            item.product.quantity = F('quantity') + item.quantity
             item.product.save()
 
         self.is_active = False
         self.save()
+
+    def get_summary(self):
+        items = self.orderitems.select_related()
+        return {
+            'total_cost': sum(list(map(lambda x: x.quantity * x.product.price,
+                                       items))),
+            'total_quantity': sum(list(map(lambda x: x.quantity, items)))
+        }
 
 
 class OrderItem(models.Model):
@@ -72,3 +91,8 @@ class OrderItem(models.Model):
 
     def get_product_cost(self):
         return self.product.price * self.quantity
+
+    def delete(self):
+        self.product.quantity = F('quantity') + self.quantity
+        self.product.save()
+        super(self.__class__, self).delete()

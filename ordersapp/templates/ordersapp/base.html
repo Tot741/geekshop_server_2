@@ -21,10 +21,9 @@
 
     {% block js %}
         <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+        <script src="{% static 'js/jquery.formset.js' %}"></script>
         <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-        <script src="{% static 'js/auth-admin.js' %}"></script>
         <script src="{% static 'vendor/fontawesome/fontawesome-icons.js' %}" crossorigin="anonymous"></script>
-        <script src="{% static 'js/datatable.js' %}"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"
                 crossorigin="anonymous"></script>
         <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
@@ -32,6 +31,8 @@
                 crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js"
                 crossorigin="anonymous"></script>
+        <script src="{% static 'js/orders_scripts.js' %}"></script>
+        <script src="{% static 'js/datatable.js' %}"></script>
     {% endblock %}
 </head>
 <body>
