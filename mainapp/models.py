@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.cache import cache
 
+
 # Create your models here.
 class ProductCategory(models.Model):
     name = models.CharField(max_length=64, unique=True)
@@ -26,6 +27,7 @@ class ProductCategory(models.Model):
              update_fields=None):
         super().save()
         cache.delete('categories')
+
 
 class Product(models.Model):
     name = models.CharField(max_length=256)
@@ -55,3 +57,9 @@ class Product(models.Model):
              update_fields=None):
         super().save()
         cache.delete('products')
+
+
+def db_profile_by_type(prefix, type, queries):
+    update_queries = list(filter(lambda x: type in x['sql'], queries))
+    print(f'db_profile {type} for {prefix}:')
+    [print(query['sql']) for query in update_queries]

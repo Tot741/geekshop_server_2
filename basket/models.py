@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import F
 
 from authapp.models import User
 from mainapp.models import Product
@@ -45,7 +46,7 @@ class Basket(models.Model):
         self.product.save()
 
     def delete(self, using=None, keep_parents=False):
-        self.product.quantity += self.quantity
+        self.product.quantity = F('quantity') + self.quantity
         self.product.save()
         super().delete()
 

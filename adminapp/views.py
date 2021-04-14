@@ -5,10 +5,13 @@ from django.contrib.auth.decorators import user_passes_test
 from django.views.generic.list import ListView
 from django.utils.decorators import method_decorator
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.db import connection
+from django.db.models import F
 
 from authapp.models import User
-from mainapp.models import Product
-from adminapp.forms import UserAdminRegisterForm, UserAdminProfileForm, ProductAdminCreateForm
+from mainapp.models import Product, ProductCategory, db_profile_by_type
+from adminapp.forms import UserAdminRegisterForm, UserAdminProfileForm, ProductAdminCreateForm, \
+    ProductCategoryAdminEditForm, ProductCategoryAdminCreateForm
 
 
 @user_passes_test(lambda u: u.is_superuser)
@@ -220,3 +223,63 @@ class ProductDeleteView(DeleteView):
     @method_decorator(user_passes_test(lambda u: u.is_superuser))
     def dispatch(self, request, *args, **kwargs):
         return super(ProductDeleteView, self).dispatch(request, *args, **kwargs)
+
+
+class ProductCategoriesListView(ListView):
+    model = ProductCategory
+    template_name = 'adminapp/admin_categories_read.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(ProductCategoriesListView, self).get_context_data(**kwargs)
+        context['title'] = 'Geekshop - Список категорий продуктов'
+        return context
+
+    @method_decorator(user_passes_test(lambda u: u.is_superuser))
+    def dispatch(self, request, *args, **kwargs):
+        return super(ProductCategoriesListView, self).dispatch(request, *args, **kwargs)
+
+
+class ProductCategoryCreateView(CreateView):
+    model = ProductCategory
+    template_name = 'adminapp/admin-category-create.html'
+    form_class = ProductCategoryAdminCreateForm
+    success_url = reverse_lazy('admins:admin_categories_read')
+
+    def get_context_data(self, **kwargs):
+        context = super(ProductCategoryCreateView, self).get_context_data(**kwargs)
+        context['title'] = 'Geekshop - Создание категории продукта'
+        return context
+
+    @method_decorator(user_passes_test(lambda u: u.is_superuser))
+    def dispatch(self, request, *args, **kwargs):
+        return super(ProductCategoryCreateView, self).dispatch(request, *args, **kwargs)
+
+
+class ProductCategoryUpdateView(UpdateView):
+    model = ProductCategory
+    template_name = 'adminapp/admin-category-update-delete.html'
+    success_url = reverse_lazy('admins:admin_categories_read')
+    form_class = ProductCategoryAdminEditForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'категории/редактирование'
+        return context
+
+    def form_valid(self, form):
+        if 'discount' in form.cleaned_data:
+            discount = form.cleaned_data['discount']
+            if discount:
+                self.object.product_set.update(price=F('price') * (1 - discount / 100))
+                db_profile_by_type(self.__class__, 'UPDATE', connection.queries)
+
+        return super().form_valid(form)
+
+class ProductCategoryDeleteView(DeleteView):
+    model = ProductCategory
+    template_name = 'adminapp/admin-category-update-delete.html'
+    success_url = reverse_lazy('admins:admin_categories_read')
+
+    @method_decorator(user_passes_test(lambda u: u.is_superuser))
+    def dispatch(self, request, *args, **kwargs):
+        return super(ProductCategoryDeleteView, self).dispatch(request, *args, **kwargs)
